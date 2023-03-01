@@ -1,56 +1,126 @@
 #include "binary_trees.h"
 
+void binary_tree_levelorder(const binary_tree_t *tree, void (*func)(int));
+levelorder_queue_t *create_node(binary_tree_t *node);
+void pint_push(binary_tree_t *node, levelorder_queue_t *head,
+		levelorder_queue_t **tail, void (*func)(int));
+void free_queue(levelorder_queue_t *head);
+void pop(levelorder_queue_t **head);
+
 /**
- * binary_tree_levelorder - traverst a binary tree using level-order traverse
- * @tree: tree to traverse
- * @func: pointer to a function to call for each node
+ * binary_tree_levelorder - Goes through a bin-tree by level-order traversal.
+ *
+ * @tree: A pointer to the root node of the tree to traverse.
+ * @func: A pointer to a function to call for each node.
  */
 void binary_tree_levelorder(const binary_tree_t *tree, void (*func)(int))
 {
-	size_t level, maxlevel;
+	levelorder_queue_t *head, *tail;
 
-	if (!tree || !func)
+	if (tree == NULL || func == NULL)
 		return;
 
-	maxlevel = binary_tree_height(tree) + 1;
+	head = tail = create_node((binary_tree_t *)tree);
+	if (head == NULL)
+		return;
 
-	for (level = 1; level <= maxlevel; level++)
-		btlo_helper(tree, func, level);
-}
-
-/**
- * btlo_helper - goes through a binary tree using post-order traverse
- * @tree: tree to traverse
- * @func: pointer to a function to call for each node
- * @level: the level of the tree to call func upon
- */
-void btlo_helper(const binary_tree_t *tree, void (*func)(int), size_t level)
-{
-	if (level == 1)
-		func(tree->n);
-	else
+	while (head != NULL)
 	{
-		btlo_helper(tree->left, func, level - 1);
-		btlo_helper(tree->right, func, level - 1);
+		pint_push(head->node, head, &tail, func);
+		pop(&head);
 	}
 }
 
 /**
- * binary_tree_height - measures the height of a binary tree
- * @tree: tree to measure the height of
+ * create_node - Creates a new levelorder_queue_t node.
  *
- * Return: height of the tree
- *         0 if tree is NULL
+ * @node: The binary tree node for the new node to contain.
+ *
+ * Return: If an error occurs, NULL.
+ *         Otherwise, a pointer to the new node.
  */
-size_t binary_tree_height(const binary_tree_t *tree)
+levelorder_queue_t *create_node(binary_tree_t *node)
 {
-	size_t height_l = 0;
-	size_t height_r = 0;
+	levelorder_queue_t *new;
 
-	if (!tree)
-		return (0);
+	new = malloc(sizeof(levelorder_queue_t));
+	if (new == NULL)
+		return (NULL);
 
-	height_l = tree->left ? 1 + binary_tree_height(tree->left) : 0;
-	height_r = tree->right ? 1 + binary_tree_height(tree->right) : 0;
-	return (height_l > height_r ? height_l : height_r);
+	new->node = node;
+	new->next = NULL;
+
+	return (new);
+}
+
+/**
+ * pint_push - Runs a function on a given binary tree node and
+ *             pushes its children into a levelorder_queue_t queue.
+ *
+ * @node: The binary tree node to print and push.
+ * @head: A double pointer to the head of the queue.
+ * @tail: A double pointer to the tail of the queue.
+ * @func: A pointer to the function to call on @node.
+ *
+ * Description: Upon malloc failure, exits with a status code of 1.
+ */
+void pint_push(binary_tree_t *node, levelorder_queue_t *head,
+		levelorder_queue_t **tail, void (*func)(int))
+{
+	levelorder_queue_t *new;
+
+	func(node->n);
+	if (node->left != NULL)
+	{
+		new = create_node(node->left);
+		if (new == NULL)
+		{
+			free_queue(head);
+			exit(1);
+		}
+		(*tail)->next = new;
+		*tail = new;
+	}
+	if (node->right != NULL)
+	{
+		new = create_node(node->right);
+		if (new == NULL)
+		{
+			free_queue(head);
+			exit(1);
+		}
+		(*tail)->next = new;
+		*tail = new;
+	}
+}
+
+/**
+ * free_queue - Frees a levelorder_queue_t queue.
+ *
+ * @head: A pointer to the head of the queue.
+ */
+void free_queue(levelorder_queue_t *head)
+{
+	levelorder_queue_t *tmp;
+
+	while (head != NULL)
+	{
+		tmp = head->next;
+		free(head);
+		head = tmp;
+	}
+}
+
+/**
+ * pop - Pops the head of a levelorder_queue_t queue.
+ *
+ * @head: A double pointer to the head of the queue.
+ */
+void pop(levelorder_queue_t **head)
+{
+	levelorder_queue_t *tmp;
+
+	tmp = (*head)->next;
+	free(*head);
+	*head = tmp;
 }
